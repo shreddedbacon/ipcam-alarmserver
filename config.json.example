@@ -1,0 +1,17 @@
+{
+	"server": "http://shinobi.example:8080",
+	"apikey": "abcdefghijklmnop",
+	"cameras": [
+		{
+			"name": "Sidedoor",
+			"ip": "192.168.1.10",
+			"group": "mygroup",
+			"region": "C0l5t"
+		},{
+			"name": "Driveway",
+			"ip": "192.168.1.11",
+			"group": "mygroup",
+			"region": "fuCdJ"
+		}
+	]
+}
