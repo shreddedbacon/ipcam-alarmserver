@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -58,12 +57,6 @@ func main() {
 }
 
 func handleConnection(conn net.Conn, sa shinobiclient.ShinobiClient) {
-	remoteAddr := conn.RemoteAddr().String()
-	u, err := url.Parse("camera://" + remoteAddr)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
 	scanner := bufio.NewScanner(conn)
 	for {
 		ok := scanner.Scan()
