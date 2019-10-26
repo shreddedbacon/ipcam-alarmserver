@@ -6,6 +6,8 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -62,26 +64,22 @@ func handleConnection(conn net.Conn, sa shinobiclient.ShinobiClient) {
 		fmt.Println(err)
 		return
 	}
-	host, _, err := net.SplitHostPort(u.Host)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
 	scanner := bufio.NewScanner(conn)
 	for {
 		ok := scanner.Scan()
 		if !ok {
 			break
 		}
-		handleMessage(scanner.Text(), host, conn, sa)
+		handleMessage(scanner.Text(), conn, sa)
 	}
 }
 
-func handleMessage(message string, host string, conn net.Conn, sa shinobiclient.ShinobiClient) {
+func handleMessage(message string, conn net.Conn, sa shinobiclient.ShinobiClient) {
 	alarmMessage := strings.TrimSpace(message[20:])
 	event := AlarmEvent{}
 	json.Unmarshal([]byte(alarmMessage), &event)
 	event.Descrip = strings.Replace(event.Descrip, "\n", "", -1) // replace new lines
+	host := getIPAddress(event.Address)
 	fmt.Println("Address:", host, event.Address, "Description:", event.Descrip, "Event:", event.Event, "Type:", event.Type, "Status:", event.Status)
 	if event.Event == "MotionDetect" && event.Status == "Start" {
 		str, err := sa.TriggerMotion(host)
@@ -91,4 +89,39 @@ func handleMessage(message string, host string, conn net.Conn, sa shinobiclient.
 			fmt.Println(str)
 		}
 	}
+}
+
+func getIPAddress(hexstring string) string {
+	var newAddress []string
+	for _, sub := range splitSubN(reverse(hexstring)[:8], 2) {
+		newAddress = append(newAddress, reverse(sub))
+	}
+	a, _ := hex.DecodeString(strings.Join(newAddress, ""))
+	return fmt.Sprintf("%v.%v.%v.%v", a[0], a[1], a[2], a[3])
+}
+
+func reverse(s string) string {
+	runes := []rune(s)
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+	return string(runes)
+}
+
+func splitSubN(s string, n int) []string {
+	sub := ""
+	subs := []string{}
+
+	runes := bytes.Runes([]byte(s))
+	l := len(runes)
+	for i, r := range runes {
+		sub = sub + string(r)
+		if (i+1)%n == 0 {
+			subs = append(subs, sub)
+			sub = ""
+		} else if (i + 1) == l {
+			subs = append(subs, sub)
+		}
+	}
+	return subs
 }
